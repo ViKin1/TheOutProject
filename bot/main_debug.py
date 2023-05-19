@@ -126,7 +126,7 @@ async def LED_cont(int_ms):
         print(col_id)
         '''
     
-async def W_sp(int_ms):
+async def led_check(int_ms):
     global di,direct,busy_col
     #motor_R.forward(Sp)
     #motor_L.forward(Sp)
@@ -135,10 +135,6 @@ async def W_sp(int_ms):
         await asio.sleep_ms(int_ms)
         await color_det()
         await dist_det()
-        #print(1)
-        #await move(10)
-        #print(2)
-        #print(3)
         np[0]=(Lt,0,0)
         np.write()
         await asio.sleep_ms(500)
@@ -157,11 +153,11 @@ async def Mot_check(int_ms):
         await asio.sleep_ms(int_ms)
         await color_det()
         await dist_det()
-        #motor_R.reverse(Sp)
-        #motor_L.reverse(Sp)
+        motor_R.reverse(Sp)
+        motor_L.reverse(Sp)
         await asio.sleep_ms(int_ms)
-        #motor_R.forward(Sp)
-        #motor_L.forward(Sp)
+        motor_R.forward(Sp)
+        motor_L.forward(Sp)
         
 async def move(turn): #движение
     global R_W_count,busy
@@ -221,7 +217,7 @@ async def dist_det():
 loop = asio.get_event_loop() #инициализируем цикл из сопрограмм
 
 loop.create_task(synch(1))
-loop.create_task(W_sp(100))
+loop.create_task(led_check(100))
 #loop.create_task(Mot_check(100))
 
 #loop.create_task(LED_cont(100))
