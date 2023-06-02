@@ -3,7 +3,7 @@ from neopixel import NeoPixel #работа с адресными светоди
 from MX1508 import *
 from VL53L0X import * #лазерный дальномер
 from tcs34725 import * #датчик цвета
-from time import sleep_ms,sleep 
+from time import sleep_ms,sleep
 import uasyncio as asio
 import aioespnow #реализация в асинхронном режиме протокола espNow
 import network
@@ -20,8 +20,9 @@ color=['Red','Yellow','White','Green','Black','Cyan','Blue','Magenta']
 dir_move=['Stop','Forward','Left','Right','Reverse']
 motor_L = MX1508(2, 4)
 motor_R = MX1508(27, 14)
-Sp=900 #скорость максимальная
-Sp1=int(Sp*0.4) #скорость для корректировки
+Sp=600 #скорость максимальная
+#Sp1=int(Sp*0.4) #скорость для корректировки
+Sp1=0
 Lt=100 
 alfa=0.8
 debug=1
@@ -118,17 +119,17 @@ async def W_sp(int_ms):
                     direct=1
                 else:
                     direct=2
-                await move(10)
+                await move(4)
             elif di==2:
                 direct=3
-                await move(16)
+                await move(8)
             else:
                 direct=0
         if  col_id==4: #col_id_l==col_id & (если черная линия)
             direct=3
-            await move(4)
+            await move(12)
             direct=2
-            await move(8)
+            await move(4)
         if  col_id==col_sel:#col_id_l==col_id & (если есть совпадение с выбранным цветом)
             direct=-1
             busy_col=1
