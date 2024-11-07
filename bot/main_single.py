@@ -18,7 +18,7 @@ tof = VL53L0X(i2c_bus1)
 NUM_OF_LED = 1
 np = NeoPixel(Pin(33), NUM_OF_LED)
 color=['Red','Yellow','White','Green','Black','Cyan','Blue','Magenta']
-col_list = set([5,3,7,1])
+#col_list = set([-1,0,-3,-5])
 dir_move=['Stop','Forward','Left','Right','Reverse']
 motor_R = MX1508(2, 4)
 motor_L = MX1508(27, 14)
@@ -29,7 +29,7 @@ Lt=60
 alfa=0.8
 debug=0
 
-R_W_count,W_count,col_id,col_id_l,direct,di,dist,busy,busy_col,col_sel=0,0,6,6,-1,0,500,0,0,5 #инициализация глобальных переменных
+R_W_count,W_count,col_id,col_id_l,direct,di,dist,busy,busy_col,col_sel=0,0,0,0,-1,0,500,0,0,5 #инициализация глобальных переменных
 stop_ms = 300
 R_m_pin = Pin(32, Pin.IN) #подключение энкодеров
 L_m_pin = Pin(25, Pin.IN)
@@ -41,17 +41,10 @@ e.active(True)
 #peer = b'\xC8\xF0\x9E\x52\x66\x0C' #C8F09E52660C (адрес карты, на которую передаем)
 ###'\\x'+mac[0:2]+'\\x'+mac[2:4]+'\\x'+mac[4:6]+'\\x'+mac[6:8]+'\\x'+mac[8:10]+'\\x'+mac[10:12]
 #e.add_peer(peer)
-#peer = b'\xC8\xF0\x9E\x4E\x9C\xA8' #C8F09E4E9CA8
-#e.add_peer(peer) #добавление в пакет
-
-
-
-peer = b'\xCC\xDB\xA7\x16\xCD\x98' # 25
-e.add_peer(peer)
-peer = b'\xCC\xDB\xA7\x14\x28\x24' #31
-e.add_peer(peer)
-peer = b'\xCC\xDB\xA7\x16\x34\x9C' #3
-e.add_peer(peer)
+peer = b'\xC8\xF0\x9E\x4E\x9C\xA8' #C8F09E4E9CA8
+#peer = b'\xE0\x5A\x1B\x75\x7D\x04' #admin1
+#peer = b'\xCC\xDB\xA7\x56\x9C\x0C' #admin2
+e.add_peer(peer) #добавление в пакет
 
 
 
@@ -198,42 +191,41 @@ async def move(turn): #движение
 
         
 async def color_det():
-    global col_id,col_id_l
     while 1:
         await asio.sleep_ms(100)
-        if not busy_col:
-            rgb=tcs.read(1)
-            r,g,b=rgb[0],rgb[1],rgb[2]
-            h,s,v=rgb_to_hsv(r,g,b)
-            if 0<h<60:#red
+        global col_id,col_id_l
+        rgb=tcs.read(1)
+        r,g,b=rgb[0],rgb[1],rgb[2]
+        h,s,v=rgb_to_hsv(r,g,b)
+        if 0<h<60:#red
+            col_id_l=col_id
+            col_id=0
+        elif 61<h<120:#yellow
+            col_id_l=col_id
+            col_id=1
+        elif 121<h<180: 
+            if v>250:#white
                 col_id_l=col_id
-                col_id=0
-            elif 61<h<120:#yellow
+                col_id=2
+            elif v<55:#black
                 col_id_l=col_id
-                col_id=1
-            elif 121<h<180: 
-                if v>250:#white
-                    col_id_l=col_id
-                    col_id=2
-                elif v<55:#black
-                    col_id_l=col_id
-                    col_id=4
-                #elif 62<v<290:#green
-                elif s>52:
-                    col_id_l=col_id
-                    col_id=3
-            elif 181<h<240:
-                if v>100:#cyan
-                    col_id_l=col_id
-                    col_id=5
-                else:#blue
-                    col_id_l=col_id
-                    col_id=6
-            elif 241<h<360:#magenta
+                col_id=4
+            #elif 62<v<290:#green
+            elif s>52:
                 col_id_l=col_id
-                col_id=7 
-            if debug:
-                print('Color is {}. R:{} G:{} B:{} H:{:.0f} S:{:.0f} V:{:.0f}'.format(color[col_id],r,g,b,h,s,v))
+                col_id=3
+        elif 181<h<240:
+            if v>100:#cyan
+                col_id_l=col_id
+                col_id=5
+            else:#blue
+                col_id_l=col_id
+                col_id=6
+        elif 241<h<360:#magenta
+            col_id_l=col_id
+            col_id=7 
+        if debug:
+            print('Color is {}. R:{} G:{} B:{} H:{:.0f} S:{:.0f} V:{:.0f}'.format(color[col_id],r,g,b,h,s,v))
             
 async def dist_det():
     global dist
@@ -257,32 +249,35 @@ async def W_sp(int_ms):
         else:di=0
         if (not busy) & (not busy_col): #меняем направление движения при наличии препятствия (если не запрещено)
             if di==1:
+                '''
                 if last_turn == 1 or (last_turn == 0 and dist%2):
                     direct=1
                     last_turn = 1
                 elif last_turn == 2 or (last_turn == 0 and not dist%2):
                     direct=2
                     last_turn = 2
+                '''
+                direct = 2
                 await stop(stop_ms)
                 await move(5)
             elif di==2:
-                last_turn = 0
+                #last_turn = 0
                 direct=3
                 await stop(stop_ms)
                 await move(10)
             else:
-                last_turn = 0
+                #last_turn = 0
                 direct=0
         #await color_det()
         if  col_id==4: #col_id_l==col_id & (если черная линия)
             direct=3
             await stop(stop_ms)
-            await move(20)
+            await move(38)
             direct=2
             await stop(stop_ms)
             await move(10)
         #if  col_id==col_sel:#col_id_l==col_id & (если есть совпадение с выбранным цветом)
-        if col_id in col_list:
+        if col_id == 0:
             direct=-1
             busy_col=1
         else: #если меняем цвет на управляющей плате, робот должен развернуться и сойти с гекса
@@ -297,28 +292,28 @@ async def stop(ms):
     await asio.sleep_ms(ms)
     direct = last_dir
     
+'''
 async def send(e, period):
     if busy_col:
         while 1:
-            await e.asend(str(col_id)) #
+            await e.asend(color[col_id]+' '+dir_move[1+direct]+' '+str(dist)) #
             await asio.sleep_ms(period)
-        
+'''
+'''        
 async def resive(e,int_ms):
     global col_sel
     while 1:
         async for mac, msg in e:
             col_sel=int.from_bytes(msg,'big')-48
-            if col_sel in col_list:
-                col_list.discard(col_sel)
             #print(color[col_sel])
             await asio.sleep_ms(int_ms)
-
+'''
 loop = asio.get_event_loop() #инициализируем цикл из сопрограмм
 
 loop.create_task(synch(1))
-#loop.create_task(led_check(100))
+loop.create_task(led_check(100))
 #loop.create_task(move(300))
-loop.create_task(W_sp(100))
+#loop.create_task(W_sp(100))
 loop.create_task(color_det())
 #loop.create_task(Mot_check(100))
 
